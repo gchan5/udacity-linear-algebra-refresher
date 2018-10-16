@@ -1,25 +1,27 @@
 from decimal import Decimal, getcontext
 
 from vector import Vector
+from line import Line
 
 getcontext().prec = 30
 
 
-class Line(object):
+class Plane(object):
 
     NO_NONZERO_ELTS_FOUND_MSG = 'No nonzero elements found'
 
     def __init__(self, normal_vector=None, constant_term=None):
-        self.dimension = 2
+        self.dimension = 3
 
         if not normal_vector:
-            all_zeros = [0]*self.dimension
+            all_zeros = ['0']*self.dimension
             normal_vector = Vector(all_zeros)
         self.normal_vector = normal_vector
 
         if not constant_term:
             constant_term = Decimal('0')
         self.constant_term = constant_term
+
         self.set_basepoint()
 
 
@@ -29,14 +31,14 @@ class Line(object):
             c = self.constant_term
             basepoint_coords = [0]*self.dimension
 
-            initial_index = Line.first_nonzero_index(n)
+            initial_index = Plane.first_nonzero_index(n.coordinates)
             initial_coefficient = n.coordinates[initial_index]
 
             basepoint_coords[initial_index] = c/initial_coefficient
             self.basepoint = Vector(basepoint_coords)
 
         except Exception as e:
-            if str(e) == Line.NO_NONZERO_ELTS_FOUND_MSG:
+            if str(e) == Plane.NO_NONZERO_ELTS_FOUND_MSG:
                 self.basepoint = None
             else:
                 raise e
@@ -69,9 +71,9 @@ class Line(object):
         n = self.normal_vector
 
         try:
-            initial_index = Line.first_nonzero_index(n)
-            terms = [write_coefficient(n.coordinates[i], is_initial_term=(i==initial_index)) + 'x_{}'.format(i+1)
-                     for i in range(self.dimension) if round(n.coordinates[i], num_decimal_places) != 0]
+            initial_index = Plane.first_nonzero_index(n)
+            terms = [write_coefficient(n[i], is_initial_term=(i==initial_index)) + 'x_{}'.format(i+1)
+                     for i in range(self.dimension) if round(n[i], num_decimal_places) != 0]
             output = ' '.join(terms)
 
         except Exception as e:
@@ -90,52 +92,32 @@ class Line(object):
 
     @staticmethod
     def first_nonzero_index(iterable):
-        for k, item in enumerate(iterable.coordinates):
+        for k, item in enumerate(iterable):
             if not MyDecimal(item).is_near_zero():
                 return k
-        raise Exception(Line.NO_NONZERO_ELTS_FOUND_MSG)
+        raise Exception(Plane.NO_NONZERO_ELTS_FOUND_MSG)
 
 
-    def is_parallel(self, line):
-        return self.normal_vector.parallel(line.normal_vector)
+    def is_parallel(self, plane):
+        return self.normal_vector.parallel(plane.normal_vector)
 
-
-    def __eq__(self, line):
+    def __eq__(self, plane):
         if self.normal_vector.is_zero():
-            if not line.normal_vector.is_zero():
+            if not plane.normal_vector.is_zero():
                 return False
             else:
-                diff = self.constant_term - line.constant_term
+                diff = self.constant_term - plane.constant_term
                 return MyDecimal(Decimal(diff)).is_near_zero()
-        elif line.normal_vector.is_zero():
+        elif plane.normal_vector.is_zero():
             return False
 
-        parallel = self.normal_vector.parallel(line.normal_vector)
+        parallel = self.normal_vector.parallel(plane.normal_vector)
 
         if parallel:
-            connecting_vector = self.basepoint.subtract(line.basepoint)
+            connecting_vector = self.basepoint.subtract(plane.basepoint)
             return connecting_vector.orthogonal(self.normal_vector)
         else:
             return False
-
-    def intersection_2d(self, line):
-        try:
-            k1 = self.constant_term
-            k2 = line.constant_term
-            a = self.normal_vector.coordinates[0]
-            b = self.normal_vector.coordinates[1]
-            c = line.normal_vector.coordinates[0]
-            d = line.normal_vector.coordinates[1]
-            x = ((d * k1) - (b * k2))/((a * d)- (b * c))
-            y = (((c * -1) * k1) + (a * k2))/((a * d) - (b * c))
-
-            return Vector([x, y])
-        
-        except ZeroDivisionError:
-            if self == line:
-                return self
-            else:
-                return None
 
 
 class MyDecimal(Decimal):
@@ -144,7 +126,24 @@ class MyDecimal(Decimal):
 
 
 if __name__ == '__main__':
-    line1 = Line(Vector([1.182, 5.562]), 6.744)
-    line2 = Line(Vector([1.773, 8.343]), 9.525)
+    plane1 = Plane(Vector([-0.412, 3.806, 0.728]), -3.46)
+    plane2 = Plane(Vector([1.03, -9.515, -1.82]), 8.65)
 
-    print(line1.__eq__(line2))
+    print(plane1.__eq__(plane2))
+    print(plane1.is_parallel(plane2))
+
+    print('--------------------')
+
+    plane1 = Plane(Vector([2.611, 5.528, 0.283]), 4.6)
+    plane2 = Plane(Vector([7.715, 8.306, 5.342]), 3.76)
+
+    print(plane1.__eq__(plane2))
+    print(plane1.is_parallel(plane2))\
+
+    print('--------------------')
+
+    plane1 = Plane(Vector([-7.926, 8.625, -7.212]), -7.952)
+    plane2 = Plane(Vector([-2.642, 2.875, -2.404]), 3.76)
+
+    print(plane1.__eq__(plane2))
+    print(plane1.is_parallel(plane2))

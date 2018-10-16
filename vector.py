@@ -104,6 +104,8 @@ class Vector(object):
     def area_triangle(self, v1):
         return 0.5 * self.area_parallelogram(v1)
 
+    def is_zero(self, tolerance=1e-10):
+        return self.magnitude() < tolerance
     
 
 
